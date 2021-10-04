@@ -1,0 +1,132 @@
+<body><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"><meta name=viewport content="width=devide-width,initial-scale=1.0,user-scalable=0"><title>扫雷HTML版</title>
+<style>
+	div.gamearea{white-space:nowrap}
+	span.mineblock{display:inline-block;width:20px;height:20px;background:#AAA;margin:2px;cursor:pointer;text-align:center;vertical-align:top;font-weight:bold}
+	span.mineblock.clicked{background:#DDD;cursor:default}
+	span.mineblock.clicked.boom{background:#F00;color:#FFF}
+	span.mineblock.notmined{color:#FFF}
+</style>
+<div>
+	<span style="display:inline-block">宽：<input type="tel"  oninput="value=value.replace(/[^\d]/g,'')" id="width" value="8"></span>
+	<span style="display:inline-block">高：<input type="tel"  oninput="value=value.replace(/[^\d]/g,'')" id="height" value="8"></span>
+	<span style="display:inline-block">雷数：<input type="tel"  oninput="value=value.replace(/[^\d]/g,'')" id="mineNum" value="10"></span>
+	<input type="button" value="生成" onclick="generate()">
+</div><br>
+<hr>
+<div id="gamearea"></div><br>
+<div id="gameover"></div>
+<script>
+function generate(){
+	width=parseInt(document.getElementById('width').value);
+	height=parseInt(document.getElementById('height').value);
+	mineNum=parseInt(document.getElementById('mineNum').value);
+	if(width>0&&height>0&&mineNum>0){
+		total=width*height;
+		if(total<=mineNum){gameOver('雷太多啦');return;}
+		var left=total;
+		var divs='<nobr>';
+		var leftMine=mineNum;
+		mineData=[];mineQueue=[];
+		for(var iX=0;iX<height;iX++){
+			for(var iY=0;iY<width;iY++){
+				if((Math.random()+leftMine/left)>1){
+					mineData[iX+'-'+iY]=1;
+					leftMine--;
+				}else{
+					mineData[iX+'-'+iY]=0;
+				}
+				left--;
+				divs+='<span id="'+iX+'-'+iY+'" onclick="checkBlock('+iX+','+iY+')" class="mineblock notmined"></span>';
+			}
+			divs+='</nobr><br><nobr>';
+		}
+		leftBlock=total;
+		gameover=false;
+		document.getElementById('gameover').innerHTML='';
+		document.getElementById('gamearea').innerHTML=divs+'</nobr>';
+	}else{
+		gameOver('参数错误');
+	}
+}
+function checkBlock(X,Y){
+	if(gameover==true)return;
+	var clickedBlock=document.getElementById(X+'-'+Y);
+	if(mineData[X+'-'+Y]==1){
+		clickedBlock.innerHTML='X';
+		clickedBlock.setAttribute('class','mineblock clicked boom');
+		clickedBlock.removeAttribute('onclick');
+		gameOver('游戏结束');
+		var allUnmined=document.getElementsByClassName('mineblock notmined');
+		for(var i=0;i<allUnmined.length;i++){
+			if(mineData[allUnmined[i].id]==1){
+				allUnmined[i].innerHTML='X';
+			}
+		}
+	}else{
+		mineQueue.push([X,Y]);
+		showBlock();
+	}
+}
+function showBlock(){
+	var mineCount,nextBlock,X,Y,clickedBlock;
+	while(mineQueue.length>0){
+		nextBlock=mineQueue.shift();
+		X=nextBlock[0];Y=nextBlock[1];
+		clickedBlock=document.getElementById(X+'-'+Y);
+		if(clickedBlock==null||clickedBlock.getAttribute('class')=='mineblock clicked')continue;
+		if(mineData[X+'-'+Y]==1){clickedBlock.innerHTML='X';clickedBlock.setAttribute('class','mineblock clicked boom');clickedBlock.removeAttribute('onclick');return false;}
+		mineCount=calcNum(X,Y);
+		clickedBlock.innerHTML=mineCount;
+		clickedBlock.setAttribute('class','mineblock clicked');
+		clickedBlock.removeAttribute('onclick');
+		leftBlock--;
+		switch(mineCount){
+		case 0:
+			clickedBlock.innerHTML='';
+			for(var iX=0;iX<3;iX++){
+			for(var iY=0;iY<3;iY++){
+				if((iX!=1 || iY!=1) && (X-1+iX)>=0 && (X-1+iX)<height && (Y-1+iY)>=0 && (Y-1+iY)<width){
+					mineQueue.push([(X-1+iX),(Y-1+iY)]);
+				}
+			}
+			}
+		break;
+		case 1:
+			clickedBlock.style.color='#3CF';
+		break;
+		case 2:
+		case 3:
+			clickedBlock.style.color='#3D0';
+		break;
+		default:
+			clickedBlock.style.color='#F33';
+		}
+	}
+	if(leftBlock==mineNum){
+		var allUnmined=document.getElementsByClassName('mineblock notmined');
+		for(var i=0;i<allUnmined.length;i++){
+			if(mineData[allUnmined[i].id]==1){
+				allUnmined[i].innerHTML='X';
+			}
+		}
+		gameOver('完成！');
+	}
+}
+function calcNum(X,Y){
+	var mineCount=0;
+	for(var iX=0;iX<3;iX++){
+		for(var iY=0;iY<3;iY++){
+			if((iX!=1 || iY!=1) && (X-1+iX)>=0 && (X-1+iX)<height && (Y-1+iY)>=0 && (Y-1+iY)<width){
+				if(mineData[(X-1+iX)+'-'+(Y-1+iY)]==1){
+					mineCount++;
+				}
+			}
+		}
+	}
+	return mineCount;
+}
+function gameOver(string){
+	gameover=true;
+	document.getElementById('gameover').innerHTML=string;
+}
+</script></body>
